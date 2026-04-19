@@ -16,6 +16,30 @@
 
         const { useState } = React;
 
+        // set model
+        function Modal({
+            title,
+            content,
+            show = false,
+            onClose = () => { },
+            onConfirm = () => { }
+
+        }) {
+            return show && ReactDOM.createPortal(
+                <div className="modal-container">
+                    <div className="modal">
+                        <h2>{title}</h2>
+                        <p>{content}</p>
+                        <div>
+                            <button onClick={onClose}>Annulla</button>
+                            <button onClick={onConfirm}>Conferma</button>
+                        </div>
+
+                    </div>
+                </div>,
+                document.body
+            )
+        }
 
         const ListaAnimali = () => {
 
@@ -24,20 +48,31 @@
             // setto var di stato per gestione lista
             const [animals, setAnimals] = useState([]);
 
-            const addList = () => {
-                const randomIndex = Math.floor(Math.random() * animalsChoices.length);
-                // salvataggio animale estratto casualmente
-                const randomAnimal = animalsChoices[randomIndex];
+            // setto var per gestione modale
+            const [show, setShow] = useState(false);
 
-                // passiamo tutto allo state per la modifica dell'array
-                setAnimals((current) => {
-                    return [...current, randomAnimal];
-                });
+            // setto var per gestione cambiamneto input utente
+            const [animalName, setAnimalName] = useState("");
+
+            const addAnimal = () => {
+                // const randomIndex = Math.floor(Math.random() * animalsChoices.length);
+                // // salvataggio animale estratto casualmente
+                // const randomAnimal = animalsChoices[randomIndex];
+
+
+                //vericafa esistanza
+                if (!animalName) return;
+                //altrimenti aggiungiamo
+                setAnimals(current => [...current, animalName]);
+                //pulizia input
+                setAnimalName('');
+                //chiusura 
+                setShow(false);
             }
 
             return (
                 <>
-                    <button onClick={addList}>Aggiungi animale</button>
+                    <button onClick={() => setShow(true)}>Aggiungi animale</button>
 
                     <details>
                         <summary>animali</summary>
@@ -47,6 +82,21 @@
                             })}
                         </ul>
                     </details>
+
+                    <Modal
+                        show={show}
+                        onClose={() => setShow(false)}
+                        onConfirm={addAnimal}
+                        title="Aggiungi un animale"
+                        content={
+                            <input
+                                type="text"
+                                placeholder="inserisci animale"
+                                value={animalName}
+                                onChange={event => setAnimalName(event.target.value)}
+                            />
+                        }
+                    />
                 </>
             )
         }
