@@ -51,23 +51,52 @@
             // setto var per gestione modale
             const [show, setShow] = useState(false);
 
+            // setto var per gestione stato caricamento
+            const [isLoading, setIsLoading] = useState(false);
+
+            // setto var di stato per gestione errore in pagina
+            const [errorMessage, setErrorMessage] = useState('');
+
             // setto var per gestione cambiamneto input utente
             const [animalName, setAnimalName] = useState("");
 
-            const addAnimal = () => {
-                // const randomIndex = Math.floor(Math.random() * animalsChoices.length);
-                // // salvataggio animale estratto casualmente
-                // const randomAnimal = animalsChoices[randomIndex];
-
+            const addAnimal = async () => {
 
                 //vericafa esistanza
-                if (!animalName) return;
-                //altrimenti aggiungiamo
-                setAnimals(current => [...current, animalName]);
-                //pulizia input
-                setAnimalName('');
-                //chiusura 
-                setShow(false);
+                if (!animalName.trim()) return;
+                setIsLoading(true);
+                // inizialmente vuoto perche non e' ancora avvenuta la ricerca di conseguenza nessun errore probabibile  
+                setErrorMessage('')
+
+                // gestione eventuali errori
+                try {
+                    const response = await fetch(`http://localhost:3333/animals?search=${animalName}`);
+                    // preso il primo animale che corrisponde dovra poi  essere convertito
+                    const [animalData] = await response.json();
+                    // se non e' presente
+                    if (!animalData) {
+                        throw new Error("Nessun animale trovato")
+                    }
+                    // costruzione oggetto animale
+                    const animal = {
+                        name: animalData.name || "Nessun animale trovato",
+                        description: animalData.description || "nessuna descrizione trovata",
+                        image: animalData.image || null
+                    }
+                    //altrimenti aggiungiamo
+                    setAnimals(current => [...current, animal]);
+
+                } catch (error) {
+                    console.error(error);
+                    const message = error.messagge === 'Nessun animale trovato' ? 'Nessun animale trovato' : 'Errore durante la ricerca dell\'animale';
+                    setErrorMessage(error.message)
+                } finally {
+                    setIsLoading(false);
+                    //pulizia input
+                    setAnimalName('');
+                    //chiusura 
+                    setShow(false);
+                }
             }
 
             return (
@@ -76,11 +105,23 @@
 
                     <details>
                         <summary>animali</summary>
-                        <ul>
+                        <div>
+                            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
                             {animals.map((animale, i) => {
-                                return <li key={i}>{animale}</li>
+                                return <div key={i} className="card" >
+                                    <div>
+                                        <h3>{animal.name}</h3>
+                                        <p>{animal.description}</p>
+                                    </div>
+                                    // se esiste esegui il codice
+                                    {animal.image &&
+                                        <figure>
+                                            <img src={animal.image} alt={animal.name} />
+                                        </figure>
+                                    }
+                                </div>
                             })}
-                        </ul>
+                        </div>
                     </details>
 
                     <Modal
@@ -88,13 +129,15 @@
                         onClose={() => setShow(false)}
                         onConfirm={addAnimal}
                         title="Aggiungi un animale"
-                        content={
+                        content={<>
                             <input
                                 type="text"
                                 placeholder="inserisci animale"
                                 value={animalName}
                                 onChange={event => setAnimalName(event.target.value)}
                             />
+                            {isLoading && <p>Caricando il risultato....</p>}
+                        </>
                         }
                     />
                 </>
